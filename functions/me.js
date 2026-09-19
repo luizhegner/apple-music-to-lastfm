@@ -1,0 +1,2 @@
+import {parseCookies,json,lastfmPost} from './_utils.js';
+export async function onRequestGet(context){const c=parseCookies(context.request);if(!c.lastfm_session)return json({connected:false},401);const r=await lastfmPost({method:'user.getInfo',sk:decodeURIComponent(c.lastfm_session)},context.env);if(!r.ok||r.data?.error)return json({connected:false,error:r.data?.message||'sessão inválida'},401);return json({connected:true,user:r.data?.user?.name||decodeURIComponent(c.lastfm_user||'')})}

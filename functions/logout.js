@@ -1,0 +1,1 @@
+export function onRequestPost(){return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','Set-Cookie':'lastfm_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0\nSet-Cookie: lastfm_user=; Path=/; Secure; SameSite=Lax; Max-Age=0'}})}

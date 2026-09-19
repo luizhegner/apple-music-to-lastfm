@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Converta e una exports do Apple Music para Last.fm localmente no navegador." />
+  <title>Apple Music → Last.fm</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">LOCAL-FIRST MUSIC TOOL</p>
+        <h1>Apple Music → Last.fm</h1>
+        <p class="lead">Una dois exports do Apple Music, confira o histórico e gere arquivos prontos para scrobbling. Os CSVs são processados no navegador.</p>
+      </div>
+      <div id="privacyBadge" class="badge">🔒 processamento local</div>
+    </header>
+
+    <section class="card">
+      <div class="section-title">
+        <div><span class="step">1</span><h2>Carregar exports</h2></div>
+        <p>Use o <b>Play Activity.csv</b> / <b>Play History...</b> de cada conta.</p>
+      </div>
+      <div class="drop-grid">
+        <label class="dropzone" id="drop1">
+          <input type="file" id="file1" accept=".csv,text/csv" />
+          <span class="drop-icon">A</span>
+          <strong>Conta Apple Music 1</strong>
+          <small>Selecione ou arraste um CSV</small>
+          <span class="filename" id="name1">nenhum arquivo</span>
+        </label>
+        <label class="dropzone" id="drop2">
+          <input type="file" id="file2" accept=".csv,text/csv" />
+          <span class="drop-icon">B</span>
+          <strong>Conta Apple Music 2</strong>
+          <small>Selecione ou arraste um CSV</small>
+          <span class="filename" id="name2">nenhum arquivo</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="primary" id="analyzeBtn">Analisar e unir</button>
+        <button class="ghost" id="clearBtn">Limpar</button>
+      </div>
+      <p class="hint">Nenhum arquivo é enviado para este site. O processamento acontece via File API do seu navegador.</p>
+    </section>
+
+    <section class="card hidden" id="resultsCard">
+      <div class="section-title">
+        <div><span class="step">2</span><h2>Resultado</h2></div>
+        <p id="sourceSummary">—</p>
+      </div>
+      <div class="stats" id="stats"></div>
+
+      <div class="notice" id="oldNotice"></div>
+
+      <div class="controls">
+        <label>Origem
+          <select id="sourceFilter">
+            <option value="all">Todas</option>
+            <option value="A">Conta A</option>
+            <option value="B">Conta B</option>
+          </select>
+        </label>
+        <label>Ordenação
+          <select id="sortOrder">
+            <option value="asc">Mais antigo → mais recente</option>
+            <option value="desc">Mais recente → mais antigo</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="dedupeToggle" checked /> remover duplicatas exatas</label>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Artista</th><th>Faixa</th><th>Álbum</th><th>Origem</th><th>Duração</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <p class="table-note" id="tableNote"></p>
+    </section>
+
+    <section class="card hidden" id="exportCard">
+      <div class="section-title">
+        <div><span class="step">3</span><h2>Exportar</h2></div>
+        <p>Escolha como pretende levar os dados ao Last.fm.</p>
+      </div>
+      <div class="export-grid">
+        <button class="export-btn" id="lastfmCsvBtn"><strong>Last.fm CSV</strong><span>arquivo estruturado para ferramentas de importação</span></button>
+        <button class="export-btn" id="universalBtn"><strong>Universal Scrobbler CSV</strong><span>formato de 6 colunas para bulk scrobbling</span></button>
+        <button class="export-btn" id="jsonBtn"><strong>JSON</strong><span>dados normalizados para automação própria</span></button>
+      </div>
+      <div class="api-panel">
+        <div>
+          <h3>Enviar histórico completo para Last.fm</h3>
+          <p>O navegador envia os eventos em lotes de até 50. As datas originais são preservadas; o Last.fm pode aceitar ou ignorar cada evento por filtros como timestamp antigo, timestamp futuro ou limite diário.</p>
+        </div>
+        <div class="api-actions">
+          <a class="ghost-link" href="/api/login">Conectar Last.fm</a>
+          <button class="primary" id="sendAllBtn" disabled>Enviar histórico completo</button>
+          <button class="ghost" id="sendReportBtn" disabled>Baixar relatório do envio</button>
+          <button class="ghost" id="logoutBtn">Desconectar</button>
+        </div>
+        <p id="accountStatus" class="hint">Backend não verificado.</p>
+        <div id="progress" class="progress hidden"><div id="progressBar"></div></div>
+        <p id="sendStatus" class="hint"></p>
+        <div id="sendBreakdown" class="send-breakdown"></div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Feito para uso pessoal. Antes de importar milhares de scrobbles, revise duplicatas, datas e limites do Last.fm.</p>
+    </footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
