@@ -1,6 +1,6 @@
-# Apple Music → Last.fm
+# Apple Music → ListenBrainz
 
-Web client local-first para unir dois exports CSV do Apple Music e gerar arquivos para importação/scrobbling no Last.fm.
+Web client local-first para unir dois exports CSV do Apple Music e enviar o histórico completo para o [ListenBrainz](https://listenbrainz.org).
 
 ## O que já funciona
 
@@ -11,33 +11,48 @@ Web client local-first para unir dois exports CSV do Apple Music e gerar arquivo
 - preservação de artista, faixa, álbum, album artist, duração e timestamp;
 - deduplicação exata de eventos entre as duas contas;
 - prévia tabular e estatísticas;
-- exportação Last.fm CSV, Universal Scrobbler CSV e JSON;
-- autenticação e envio direto em lotes de até 50 usando Cloudflare Pages Functions;
-- envio do histórico completo, sem cortar automaticamente em 14 dias;
-- relatório CSV do envio, discriminando aceitos e ignorados por código;
-- preservação dos timestamps originais.
+- exportação ListenBrainz JSON (`/1/submit-listens`), CSV e JSON normalizado;
+- autenticação por **user token** e envio direto em lotes de até 500 listens usando Cloudflare Pages Functions;
+- envio do histórico completo com `listen_type: import`, sem janela de 14 dias;
+- relatório CSV do envio, discriminando lotes aceitos e falhos;
+- preservação dos timestamps originais (`listened_at` em segundos UTC).
 
 ## Sobre o histórico antigo
 
-A API atual do Last.fm aceita lotes de até 50 scrobbles. Cada scrobble da resposta pode ser aceito ou ignorado; entre os códigos documentados estão timestamp muito antigo, timestamp futuro e limite diário de scrobbles. A documentação atual não estabelece uma janela fixa de 14 dias. Por isso, este projeto tenta o histórico completo e registra o resultado de cada evento, em vez de cortar a importação antecipadamente.
+Diferente do Last.fm, o ListenBrainz aceita listens com timestamps arbitrariamente antigos quando enviados como `listen_type: import` (até 1000 listens por requisição; aqui usamos lotes de 500 para ficar dentro do limite de tamanho do payload). Listens repetidos — mesmo `listened_at`, artista e faixa — são descartados pelo servidor, então reenviar um arquivo não duplica o histórico.
 
 ## Deploy recomendado
 
-Use **Cloudflare Pages**, não GitHub Pages, caso queira o botão de envio direto ao Last.fm. O front-end continua estático e os segredos ficam em Pages Functions.
+Use **Cloudflare Pages**. O front-end continua estático e o token do usuário fica em um cookie `HttpOnly`, nunca no `localStorage`.
 
 1. Crie um projeto Pages apontando para este repositório.
-2. Cadastre uma aplicação no Last.fm e defina o callback como `https://SEU-DOMINIO/api/callback`.
-3. Em **Settings → Variables and Secrets**, crie:
-   - `LASTFM_API_KEY`
-   - `LASTFM_SHARED_SECRET`
-4. Faça o deploy.
-5. Abra o site, carregue os dois CSVs e clique em **Conectar Last.fm**.
-6. Depois de revisar a prévia e as duplicatas, use **Enviar histórico completo**.
+2. Faça o deploy (não há secrets obrigatórios: o token é informado por quem usa o site).
+3. Abra o site, carregue os CSVs do Apple Music.
+4. Pegue seu user token em <https://listenbrainz.org/settings/>, cole no campo e clique em **Conectar ListenBrainz**.
+5. Depois de revisar a prévia e as duplicatas, use **Enviar histórico completo**.
+
+### Endpoints das Pages Functions
+
+| Rota | Método | Função |
+| --- | --- | --- |
+| `/api/token` | POST | valida o user token em `/1/validate-token` e grava o cookie |
+| `/api/me` | GET | revalida o token e devolve o nome do usuário |
+| `/api/logout` | POST | limpa os cookies |
+| `/api/submit` | POST | repassa um lote para `/1/submit-listens` |
 
 ## Uso sem backend
 
-GitHub Pages também serve para a parte de conversão/exportação. Nesse modo, os botões CSV/JSON funcionam normalmente, mas o login e o envio direto ao Last.fm não estarão disponíveis.
+GitHub Pages também serve para a parte de conversão/exportação. Nesse modo os botões de exportação funcionam normalmente; para importar, use o JSON gerado com um cliente próprio, por exemplo:
+
+```bash
+curl -X POST https://api.listenbrainz.org/1/submit-listens \
+  -H "Authorization: Token SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @listenbrainz-submit-listens.json
+```
+
+(divida o arquivo em blocos de até 1000 listens).
 
 ## Segurança
 
-Os CSVs não são enviados ao servidor pelo front-end. O navegador lê os arquivos localmente. O backend recebe somente os dados do lote no momento em que você escolhe enviar ao Last.fm. A chave e o segredo do Last.fm permanecem nas variáveis protegidas do Cloudflare Pages.
+Os CSVs não são enviados ao servidor pelo front-end: o navegador lê os arquivos localmente. O backend recebe somente os dados do lote no momento em que você escolhe enviar ao ListenBrainz. O user token trafega apenas entre o seu navegador e a sua própria instância das Pages Functions, armazenado em cookie `HttpOnly; Secure; SameSite=Lax`.
